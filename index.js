@@ -1,22 +1,19 @@
 export default {
   async fetch(request) {
-    const url = new URL(request.url);
-    const cookieHeader = request.headers.get("Cookie") || "";
+    // Clone the request and update the headers
+    const modifiedHeaders = new Headers(request.headers);
     
-    // If the URL has ?m=1 and we haven't already cleaned it (no cookie set)
-    if (url.searchParams.get("m") === "1" && !cookieHeader.includes("cleaned=true")) {
-      url.searchParams.delete("m");
-      const newUrl = url.toString();
-      
-      // Create a redirect response to the clean URL
-      const response = Response.redirect(newUrl, 301);
-      
-      // Set a cookie so that subsequent requests won't be redirected again
-      response.headers.append("Set-Cookie", "cleaned=true; Path=/; Max-Age=3600");
-      return response;
-    }
+    // Set a typical desktop User-Agent (this one is Chrome on Windows)
+    modifiedHeaders.set(
+      "User-Agent",
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36"
+    );
     
-    // Otherwise, just fetch the request as is
-    return fetch(request);
+    // Create a new request with the updated headers
+    const modifiedRequest = new Request(request, { headers: modifiedHeaders });
+    
+    // Fetch and return the response using the modified request
+    return fetch(modifiedRequest);
   }
 };
+
