@@ -1,18 +1,21 @@
 export default {
   async fetch(request) {
-    // Fetch the original response from Blogger
-    const response = await fetch(request);
-
+    // Perform the fetch with manual redirect mode
+    const response = await fetch(request, { redirect: "manual" });
+    
     // Check if the response is a 302 redirect
     if (response.status === 302) {
       const location = response.headers.get("Location");
-      // If the Location header contains "m=1", change redirect to permanent (301)
+      // If the location exists and includes "m=1", create a new permanent redirect (301)
       if (location && location.includes("m=1")) {
-        return Response.redirect(location, 301);
+        return new Response(null, {
+          status: 301,
+          headers: { "Location": location }
+        });
       }
     }
     
-    // Otherwise, return the original response
+    // Otherwise, return the response as-is
     return response;
   }
 };
