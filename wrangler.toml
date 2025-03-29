@@ -1,0 +1,5 @@
+name = "remove-m1-worker"
+type = "javascript"
+account_id = "YOUR_CLOUDFLARE_ACCOUNT_ID"  # Replace with your account ID
+workers_dev = true
+compatibility_date = "2025-03-29"
