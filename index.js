@@ -2,16 +2,40 @@ export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
 
-    // Check if ?m=1 is present in the query parameters
-    if (url.searchParams.has("m") && url.searchParams.get("m") === "1") {
-      // Remove the m=1 parameter
-      url.searchParams.delete("m");
+    // Only inject canonical if the page has m=1
+    if (url.searchParams.get("m") === "1") {
+      const cleanUrl = new URL(url);
+      cleanUrl.searchParams.delete("m");
 
-      // Return a 301 redirect to the cleaned URL
-      return Response.redirect(url.toString(), 301);
+      // Fetch the original response
+      const originalResponse = await fetch(request);
+      const contentType = originalResponse.headers.get("content-type") || "";
+
+      // Only process HTML responses
+      if (contentType.includes("text/html")) {
+        const originalText = await originalResponse.text();
+
+        // Inject <link rel="canonical"> in <head>
+        const canonicalTag = `<link rel="canonical" href="${cleanUrl.toString()}"/>`;
+
+        const modifiedHtml = originalText.replace(
+          /<head[^>]*>/i,
+          (match) => `${match}\n  ${canonicalTag}`
+        );
+
+        return new Response(modifiedHtml, {
+          status: originalResponse.status,
+          headers: {
+            "Content-Type": contentType,
+          },
+        });
+      }
+
+      // If not HTML, return original response
+      return originalResponse;
     }
 
-    // If no m=1, just pass through
+    // If no m=1, just return the original response
     return fetch(request);
   },
 };
