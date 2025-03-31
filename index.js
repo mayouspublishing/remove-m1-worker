@@ -1,41 +1,21 @@
 export default {
   async fetch(request, env, ctx) {
-    const url = new URL(request.url);
+    const response = await fetch(request);
 
-    // Only inject canonical if the page has m=1
-    if (url.searchParams.get("m") === "1") {
-      const cleanUrl = new URL(url);
-      cleanUrl.searchParams.delete("m");
-
-      // Fetch the original response
-      const originalResponse = await fetch(request);
-      const contentType = originalResponse.headers.get("content-type") || "";
-
-      // Only process HTML responses
-      if (contentType.includes("text/html")) {
-        const originalText = await originalResponse.text();
-
-        // Inject <link rel="canonical"> in <head>
-        const canonicalTag = `<link rel="canonical" href="${cleanUrl.toString()}"/>`;
-
-        const modifiedHtml = originalText.replace(
-          /<head[^>]*>/i,
-          (match) => `${match}\n  ${canonicalTag}`
-        );
-
-        return new Response(modifiedHtml, {
-          status: originalResponse.status,
-          headers: {
-            "Content-Type": contentType,
-          },
-        });
-      }
-
-      // If not HTML, return original response
-      return originalResponse;
+    // Check if it's a 302 redirect to ?m=1
+    if (
+      response.status === 302 &&
+      response.headers.get("Location")?.includes("?m=1")
+    ) {
+      // Copy headers and change status to 301
+      const newHeaders = new Headers(response.headers);
+      return new Response(null, {
+        status: 301,
+        headers: newHeaders,
+      });
     }
 
-    // If no m=1, just return the original response
-    return fetch(request);
+    // Otherwise, return original response
+    return response;
   },
 };
