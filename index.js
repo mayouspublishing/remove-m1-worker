@@ -1,22 +1,17 @@
 export default {
-  async fetch(request) {
-    // Perform the fetch with manual redirect mode
-    const response = await fetch(request, { redirect: "manual" });
-    
-    // Check if the response is a 302 redirect
-    if (response.status === 302) {
-      const location = response.headers.get("Location");
-      // If the location exists and includes "m=1", create a new permanent redirect (301)
-      if (location && location.includes("m=1")) {
-        return new Response(null, {
-          status: 301,
-          headers: { "Location": location }
-        });
-      }
-    }
-    
-    // Otherwise, return the response as-is
-    return response;
-  }
-};
+  async fetch(request, env, ctx) {
+    const url = new URL(request.url);
 
+    // Check if ?m=1 is present in the query parameters
+    if (url.searchParams.has("m") && url.searchParams.get("m") === "1") {
+      // Remove the m=1 parameter
+      url.searchParams.delete("m");
+
+      // Return a 301 redirect to the cleaned URL
+      return Response.redirect(url.toString(), 301);
+    }
+
+    // If no m=1, just pass through
+    return fetch(request);
+  },
+};
